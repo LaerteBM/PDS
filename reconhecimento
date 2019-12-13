@@ -124,5 +124,5 @@ end
 %Passo 7: Reconhecimento de caracateres
 
 
-ocrtext = ocr(aposStroke,caixas);
-[ocrtext.Text]
+ocrtext = ocr(aposStroke, caixas);
+ocrtext.Text

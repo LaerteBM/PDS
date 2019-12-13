@@ -24,8 +24,5 @@ imshow(B), title('Detected Faces');
 n = size(BBOX,1);
 str_n = num2str(n);
 
-
-
-
 str = strcat('numero de faces prevists =', str_n);
 disp(str);

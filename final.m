@@ -2,18 +2,23 @@ clc; clear all; close all;
 
 f = imread('velo.jpg');
 
-imshow(i);
+figure;
+imshow(f);
+title('Imagem Original');
 
-Rmin =100% 55;%100;
-Rmax = 500%75;%500;
+Rmin = 150% 55;%100;
+Rmax = 2.5*Rmin%75;%500;
+
+%rmax < 3*rmin and (rmax-rmin) < 100.
 
 [centersDark1, radiiDark1] = imfindcircles(f, [Rmin Rmax],'ObjectPolarity', 'bright', 'Sensitivity', 0.98);
 
 viscircles(centersDark1, radiiDark1, 'Color', 'blue','LineStyle', '-');
 
 
-
+figure;
 imshow(f)
+title('Imagem com Círculos');
 
 %[xmin ymin width height]
 
@@ -24,8 +29,9 @@ h = 2*radiiDark1(1,1);
 
 
 i  = imcrop(f,[x y w h]);
-%figure
-imshow(i)
+figure;
+imshow(i);
+title('Recorte da placa')
 
 %%Passo 1: Ler e mostrar a imagem
 
@@ -36,10 +42,14 @@ imshow(i)
 
 
 imagemCinza = rgb2gray(i);
+figure;
+imshow(imagemCinza);
+title('Imagem Cinza');
+
 rBordas =    detectMSERFeatures(imagemCinza, 'RegionAreaRange', [20 50000]);
 rPixels = vertcat(cell2mat(rBordas.PixelList));                             %Converte a tabela em uma matriz USAR VERTCAT
 
-%figure;
+figure;
 imshow(i);
 hold on
 plot(rBordas, 'showPixelList', true, 'showEllipses', false);                %mostra os objetos detectados
@@ -56,8 +66,8 @@ mascaraBorda = edge(imagemCinza, 'Canny');                                  %Col
 
 intersecao = mascaraBorda & mascaraMSER;
 %figure;
-imshowpair(mascaraBorda, intersecao, 'montage');                            %Plota a imagem com bordas Canny e a interseção
-title('Interseção entre Canny e MSER');
+imshow(intersecao);                            %Plota a imagem com bordas Canny e a interseção
+title('Retirando o que não é texto através de Canny');
 
 %%Passo 4: Destacar bordas 
 
@@ -72,14 +82,14 @@ bw = bwperim(intersecao,8);
 bw3 = imdilate(bw, strel('disk',1));
 %figure;
 imshow(bw3);
-title('Bordas destacadas???');
+title('Bordas destacadas');
 
 %Passo 5: Retirar o que não faz parte do texto
 
 mascara = ~bw3 & mascaraMSER;
-%figure;
-imshowpair(mascaraMSER, mascara, 'montage');
-title('MSER original e segmentada');
+figure;
+imshow(mascara);
+title('Bordas adensadas');
 
 
 %Passo 6:  Filtrar os candidatos a caracteres usando análise de componentes
@@ -122,6 +132,7 @@ for k = 1:componentes.NumObjects
     end
 end
 
+figure;
 imshow(~aposStroke);
 title('aposStroke')
 
@@ -133,25 +144,28 @@ mascaraMorfologica = imopen(mascaraMorfologica, se2);
 title('essa');
 
 displayImage = i;
-displayImage (~repmat(mascaraMorfologica,1,1,3)) = 0;                       %Agrupar a matriz com texto
+displayImage (~repmat(mascaraMorfologica,1,1,3)) = 0;                     %Agrupar a matriz com texto
 imshow(displayImage)
 title('ultima')
 
-areaLimite =  1000000000000000000000000000000000000000000000;
+areaLimite =  10000;
 componentes = bwconncomp(mascaraMorfologica);
 stats = regionprops(componentes, 'BoundingBox','Area');
 caixas =  round(vertcat(stats(vertcat(stats.Area)> areaLimite).BoundingBox));
 
 for e = 1:size(caixas,1)
-    %figure;
+    figure;
     imshow(imcrop(i, caixas(e,:)));
     title('Região de texto');
 end
 
 %Passo 7: Reconhecimento de caracateres
 
-
 ocrtext = ocr(~aposStroke);
-disp('Velocidade: ')
-disp([ocrtext.Text]);
-disp('km/h')
+resposta = strcat('Velocidade Máxima: ', [ocrtext.Text], ' km/h');
+
+
+Iocr = insertText(i,[size(i,1) 0],resposta,'AnchorPoint', 'RightTop','FontSize',20);
+figure; 
+title('Resultado OCR');
+imshow(Iocr);
